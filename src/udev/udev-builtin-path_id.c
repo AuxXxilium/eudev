@@ -576,11 +576,50 @@ out:
         return parent;
 }
 
+static int find_real_nvme_parent(struct udev_device *dev, struct udev_device **ret) {
+        _cleanup_free_ struct udev_device *nvme = NULL;
+        const char *sysname, *end;
+        struct udev *udev = udev_device_get_udev(dev);
+
+        /* If the device belongs to "nvme-subsystem" (not to be confused with "nvme"), which happens when
+         * NVMe multipathing is enabled in the kernel (/sys/module/nvme_core/parameters/multipath is Y),
+         * then the syspath is something like the following:
+         *   /sys/devices/virtual/nvme-subsystem/nvme-subsys0/nvme0n1
+         * Hence, we need to find the 'real parent' in "nvme" subsystem, e.g,
+         *   /sys/devices/pci0000:00/0000:00:1c.4/0000:3c:00.0/nvme/nvme0 */
+
+        assert(dev);
+        assert(ret);
+
+        sysname = udev_device_get_sysname(dev);
+        if (sysname  ==  NULL)
+                return -1;
+
+        /* The sysname format of nvme block device is nvme%d[c%d]n%d[p%d], e.g. nvme0n1p2 or nvme0c1n2.
+         * (Note, nvme device with 'c' can be ignored, as they are hidden. )
+         * The sysname format of nvme subsystem device is nvme%d.
+         * See nvme_alloc_ns() and nvme_init_ctrl() in drivers/nvme/host/core.c for more details. */
+        end = startswith(sysname, "nvme");
+        if (!end)
+                return -ENXIO;
+
+        end += strspn(end, "0123456789");
+        sysname = strndupa(sysname, end - sysname);
+
+        nvme = udev_device_new_from_subsystem_sysname(udev, "nvme", sysname);
+        if (nvme == NULL)
+                return -1;
+
+        *ret = TAKE_PTR(nvme);
+        return 0;
+}
+
 static int builtin_path_id(struct udev_device *dev, int argc __attribute__((unused)), char *argv[] __attribute__((unused)), bool test) {
         struct udev_device *parent;
         char *path = NULL;
         bool supported_transport = false;
         bool supported_parent = false;
+        _cleanup_free_ struct udev_device *dev_other_branch = NULL;
 
         /* S390 ccw bus */
         parent = udev_device_get_parent_with_subsystem_devtype(dev, "ccw", NULL);
@@ -636,16 +675,28 @@ static int builtin_path_id(struct udev_device *dev, int argc __attribute__((unus
                         parent = skip_subsystem(parent, "scm");
                         supported_transport = true;
                         supported_parent = true;
-                } else if (streq(subsys, "nvme")) {
-                        const char *nsid = udev_device_get_sysattr_value(dev, "nsid");
-
-                        if (nsid) {
+                } else if (streq(subsys, "nvme") || streq(subsys, "nvme-subsystem")) {
+                        const char *nsid;
+                        int r;
+                        
+                        nsid = udev_device_get_sysattr_value(dev, "nsid");
+                        if (nsid != NULL) {
                                 path_prepend(&path, "nvme-%s", nsid);
+                                if (compat_path)
+                                        path_prepend(&path, "nvme-%s", nsid);
+
+                                if (streq(subsys, "nvme-subsystem")) {
+                                        r = find_real_nvme_parent(dev, &dev_other_branch);
+                                        if (r < 0)
+                                                return r;
+
+                                        parent = dev_other_branch;
+                                }
+
                                 parent = skip_subsystem(parent, "nvme");
                                 supported_parent = true;
                                 supported_transport = true;
                         }
-                }
 
                 parent = udev_device_get_parent(parent);
         }

@@ -212,3 +212,11 @@ extern const struct udevadm_cmd udevadm_monitor;
 extern const struct udevadm_cmd udevadm_hwdb;
 extern const struct udevadm_cmd udevadm_test;
 extern const struct udevadm_cmd udevadm_test_builtin;
+
+#define TAKE_PTR(ptr)                           \
+        ({                                      \
+                typeof(ptr) *_pptr_ = &(ptr);   \
+                typeof(ptr) _ptr_ = *_pptr_;    \
+                *_pptr_ = NULL;                 \
+                _ptr_;                          \
+        })
