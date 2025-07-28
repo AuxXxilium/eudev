@@ -3,11 +3,6 @@
 # The lookup keys are composed in:
 #   60-input-id.rules
 #
-# Note: The format of the "input-id:" prefix match key is a contract between
-# the rules file and the hardware data, it might change in later revisions to
-# support more or better matches, it is not necessarily expected to be a stable
-# ABI.
-#
 # Match string formats:
 # id-input:modalias:<modalias>
 #
@@ -19,12 +14,11 @@
 # where /dev/input/eventXX is the device in question. If in
 # doubt, simply use /dev/input/event* to reload all input rules.
 #
-# If your changes are generally applicable, preferably send them as a pull
-# request to
+# If your changes are generally applicable, send them as a pull request to
 #   https://github.com/systemd/systemd
 # or create a bug report on https://github.com/systemd/systemd/issues and
 # include your new rules, a description of the device, and the output of
-#   udevadm info /dev/input/eventXX.
+#   udevadm info /dev/input/eventXX
 #
 # This file must only be used where the input_id builtin assigns the wrong
 # properties or lacks the assignment of some properties. This is almost always
@@ -56,13 +50,31 @@
 
 # Sort by brand, model
 
+# Code Mercenaries Hard- und Software GmbH Virtual RC USB
+id-input:modalias:input:b0003v07C0p1125*
+ ID_INPUT_MOUSE=
+ ID_INPUT_JOYSTICK=1
+
+# GOLD WARRIOR SIM PhoenixRC 10411R
+id-input:modalias:input:b0003v1781p0898*
+ ID_INPUT_ACCELEROMETER=
+ ID_INPUT_JOYSTICK=1
+
 # XP-PEN STAR 06
 id-input:modalias:input:b0003v28bdp0078*
  ID_INPUT_TABLET=1
 
+# XBox Series Elite controller
+id-input:modalias:input:b0005v045Ep0B22e0517*
+ ID_INPUT_JOYSTICK=1
+
 # Lite-On Tech IBM USB Travel Keyboard with Ultra Nav Mouse
 id-input:modalias:input:b0003v04B3p301Ee0100-e0,1,2,4*
  ID_INPUT_POINTINGSTICK=1
+
+# Logitech G915 TKL Keyboard (Bluetooth)
+id-input:modalias:input:b0005v046DpB35Fe0022*
+ ID_INPUT_MOUSE=0
 
 # Logitech Ultrathin Touch Mouse
 id-input:modalias:input:b0005v046DpB00De0700*
@@ -77,6 +89,20 @@ id-input:modalias:input:b0003v046Dp4066e0111*
  ID_INPUT_MOUSE=0
 
 # CH Products Pro Pedals
-id-input:modalias:input:b0003v068Ep00F2e0100*
+id-input:modalias:input:b0003v068Ep00F2*
  ID_INPUT_ACCELEROMETER=0
+ ID_INPUT_JOYSTICK=1
+
+# TEX Shinobi Trackpoint
+id-input:modalias:input:b0003v04D9p0407e0111-e0,1,2,4*
+ ID_INPUT_POINTINGSTICK=1
+
+# ASRock LED Controller
+id-input:modalias:input:b0003v26CEp01A2*
+ ID_INPUT_JOYSTICK=
+ ID_INPUT_KEY=
+ ID_INPUT=
+
+# Saitek PLC Pro Flight Rudder Pedals
+id-input:modalias:input:b0003v06A3p0763*
  ID_INPUT_JOYSTICK=1
